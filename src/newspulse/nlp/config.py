@@ -1,0 +1,8 @@
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+SENTIMENT_MODEL = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+NER_MODEL = "dslim/bert-base-NER"
+NEAR_DUPLICATE_THRESHOLD = 0.88
+MAX_KEYWORDS_PER_ARTICLE = 8
+MAX_DATASET_KEYWORDS = 20
+MAX_SENTIMENT_CHARS = 4000
+MAX_NER_CHARS = 4000

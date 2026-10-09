@@ -4,6 +4,7 @@ import streamlit as st
 from newspulse.dataset_service import Dataset
 from newspulse.ui.components import render_article_detail, render_validation_summary, searchable_articles
 from newspulse.ui.layout import render_page_header
+from newspulse.ui.nlp_analysis import article_analysis_for_id, render_analysis_controls, render_article_analysis
 
 
 def render_article_explorer(dataset: Dataset) -> None:
@@ -46,3 +47,10 @@ def render_article_explorer(dataset: Dataset) -> None:
         render_article_detail(article)
     with st.expander("View preserved original text"):
         st.text(str(article["text"]))
+
+    result = render_analysis_controls(articles, "article_explorer")
+    if result is not None:
+        analysis = article_analysis_for_id(result, selected_id)
+        if analysis is not None:
+            with st.container(border=True):
+                render_article_analysis(analysis, result, result.article_results)
