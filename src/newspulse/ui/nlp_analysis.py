@@ -14,43 +14,70 @@ def _dataset_key(articles: pd.DataFrame) -> str:
     return hashlib.sha256(digest).hexdigest()
 
 
-def render_analysis_controls(articles: pd.DataFrame, page_key: str) -> AnalysisResult | None:
+def next_analysis_run_id(current_run_id: int, has_cached_result: bool) -> int:
+    return current_run_id + int(has_cached_result)
+
+
+def render_analysis_controls(
+    articles: pd.DataFrame,
+    page_key: str,
+    *,
+    show_controls: bool = True,
+) -> AnalysisResult | None:
     dataset_key = _dataset_key(articles)
     result_key = f"nlp_result_{dataset_key}"
     run_key = f"nlp_run_id_{dataset_key}"
     result = st.session_state.get(result_key)
 
-    st.markdown('<div class="np-rule"></div>', unsafe_allow_html=True)
-    st.subheader("NLP analysis")
-    st.caption(
-        "Sentence embeddings, sentiment and entity models run on demand. The first run may download model weights."
-    )
-    if st.button("Run NLP analysis" if result is None else "Re-run NLP analysis", key=f"nlp_run_{page_key}"):
-        run_id = st.session_state.get(run_key, 0)
-        with st.spinner("Loading models and analyzing the article collection..."):
-            try:
-                result = analyze_articles_cached(articles, run_id=run_id)
-                st.session_state[result_key] = result
-            except Exception as error:
-                st.error(f"Analysis could not start: {type(error).__name__}: {error}")
-                result = None
-
-    result = st.session_state.get(result_key)
-    if result is not None:
-        statuses = result.feature_status
-        available = sum(status == "Available" for status in statuses.values())
-        st.caption(f"Analysis status: {available} of {len(statuses)} features available.")
-        for feature, message in result.feature_errors.items():
-            st.warning(f"{feature.replace('_', ' ').capitalize()} unavailable: {message}")
-        if result.feature_errors and st.button("Retry unavailable models", key=f"nlp_retry_{page_key}"):
-            st.session_state[run_key] = st.session_state.get(run_key, 0) + 1
-            with st.spinner("Retrying unavailable model features..."):
+    if show_controls:
+        st.markdown('<div class="np-rule"></div>', unsafe_allow_html=True)
+        st.subheader("NLP analysis")
+        st.caption(
+            "Sentence embeddings, sentiment and entity models run on demand. The first run may download model weights."
+        )
+        if st.button("Run NLP analysis" if result is None else "Re-run NLP analysis", key=f"nlp_run_{page_key}"):
+            run_id = next_analysis_run_id(st.session_state.get(run_key, 0), result is not None)
+            st.session_state[run_key] = run_id
+            with st.spinner("Loading models and analyzing the article collection..."):
                 try:
-                    result = analyze_articles_cached(articles, run_id=st.session_state[run_key])
+                    result = analyze_articles_cached(articles, run_id=run_id)
                     st.session_state[result_key] = result
-                    st.rerun()
                 except Exception as error:
                     st.error(f"Analysis could not start: {type(error).__name__}: {error}")
+                    result = None
+
+        result = st.session_state.get(result_key)
+        if result is not None:
+            statuses = result.feature_status
+            available = sum(status == "Available" for status in statuses.values())
+            st.caption(f"Analysis status: {available} of {len(statuses)} features available.")
+            for feature, message in result.feature_errors.items():
+                st.warning(f"{feature.replace('_', ' ').capitalize()} unavailable: {message}")
+            if result.feature_errors and st.button("Retry unavailable models", key=f"nlp_retry_{page_key}"):
+                st.session_state[run_key] = st.session_state.get(run_key, 0) + 1
+                with st.spinner("Retrying unavailable model features..."):
+                    try:
+                        result = analyze_articles_cached(articles, run_id=st.session_state[run_key])
+                        st.session_state[result_key] = result
+                        st.rerun()
+                    except Exception as error:
+                        st.error(f"Analysis could not start: {type(error).__name__}: {error}")
+    else:
+        result = st.session_state.get(result_key)
+    return result
+
+
+def dataset_analysis_key(articles: pd.DataFrame) -> str:
+    return _dataset_key(articles)
+
+
+def get_cached_analysis(articles: pd.DataFrame) -> AnalysisResult | None:
+    return st.session_state.get(f"nlp_result_{_dataset_key(articles)}")
+
+
+def run_cached_analysis(articles: pd.DataFrame, run_id: int = 0) -> AnalysisResult:
+    result = analyze_articles_cached(articles, run_id=run_id)
+    st.session_state[f"nlp_result_{_dataset_key(articles)}"] = result
     return result
 
 
@@ -99,7 +126,9 @@ def render_article_analysis(
     if matches:
         for index, score in matches:
             article = articles.iloc[index]
-            st.caption(f"{article['title']} ({score:.1%} cosine similarity)")
+            published = article.get("published_at")
+            date = published.strftime("%b %d, %Y") if published is not None and pd.notna(published) else "Date unavailable"
+            st.caption(f"{article.get('title', 'Untitled article')}  |  {article.get('source', 'Unknown source')}  |  {date}  |  {score:.1%} cosine similarity")
     elif result.feature_status.get("similarity") == "Unavailable":
         st.caption("Similar-article matches are unavailable because embeddings could not be generated.")
     else:

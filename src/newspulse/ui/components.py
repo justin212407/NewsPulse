@@ -4,6 +4,21 @@ import streamlit as st
 from newspulse.dataset_service import Dataset
 
 
+def render_dataset_state(dataset: Dataset) -> bool:
+    render_validation_summary(dataset)
+    if dataset.error:
+        return False
+    if dataset.report.total_rows > 0:
+        st.caption(
+            f"Data check: {dataset.report.accepted_rows} accepted, "
+            f"{dataset.report.skipped_rows} skipped, {dataset.report.warning_rows} warning(s)."
+        )
+    if dataset.articles.empty:
+        st.info("Load the sample collection or upload a valid CSV/JSON dataset to continue.")
+        return False
+    return True
+
+
 def render_validation_summary(dataset: Dataset) -> None:
     report = dataset.report
     if dataset.error:
@@ -38,7 +53,13 @@ def render_article_detail(article: pd.Series) -> None:
     date = article["published_at"]
     date_text = date.strftime("%b %d, %Y · %H:%M UTC") if pd.notna(date) else "Date unavailable"
     st.caption(f"{article['source']}  |  {date_text}  |  ID {article['id']}")
-    st.write(str(article["text_clean"]))
+    text = str(article["text_clean"])
+    if len(text) > 900:
+        st.write(text[:420].rstrip() + "…")
+        with st.expander("Read full article"):
+            st.write(text)
+    else:
+        st.write(text)
     if article["url"]:
         st.link_button("Open source article", str(article["url"]))
 

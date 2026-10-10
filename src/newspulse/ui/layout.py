@@ -46,11 +46,8 @@ def render_sidebar() -> tuple[str, object | None]:
                 type=("csv", "json"),
                 help=f"Maximum file size: {MAX_UPLOAD_BYTES // (1024 * 1024)} MB",
             )
-            if uploaded_file and uploaded_file.size > MAX_UPLOAD_BYTES:
-                st.error("This file exceeds the 20 MB upload limit.")
-                uploaded_file = None
         st.markdown('<div class="np-rule"></div>', unsafe_allow_html=True)
-        st.caption("Analysis pages will be enabled as NLP pipelines are implemented.")
+        st.caption("Story, entity, and narrative analysis use cached NLP outputs when available.")
     return dataset_choice, uploaded_file
 
 

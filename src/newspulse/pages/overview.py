@@ -11,7 +11,7 @@ from newspulse.ui.nlp_analysis import render_analysis_controls
 def render_overview(dataset: Dataset) -> None:
     render_page_header(
         "News coverage, in context",
-        "Start with a validated article collection. Topic and narrative analysis will follow as those pipelines are built.",
+        "Start with the sample news collection or upload your own. Run NLP analysis to explore stories, entities, sentiment, and observed changes over time.",
         "Dataset overview",
     )
     render_validation_summary(dataset)

@@ -43,6 +43,8 @@ class AnalysisResult:
     exact_duplicate_groups: list[list[int]]
     near_duplicate_pairs: list[tuple[int, int, float]]
     similarity: np.ndarray
+    embeddings: np.ndarray
+    valid_indices: list[int]
     feature_errors: dict[str, str]
     feature_status: dict[str, str]
 
@@ -100,6 +102,7 @@ def analyze_articles(articles: pd.DataFrame, adapters: ModelAdapters | None = No
     statuses["exact_duplicates"] = "Available"
 
     similarity = np.empty((0, 0), dtype=np.float32)
+    embeddings = np.empty((0, 0), dtype=np.float32)
     near_pairs: list[tuple[int, int, float]] = []
     if not valid_indices:
         frame["similar_articles"] = [[] for _ in texts]
@@ -113,9 +116,9 @@ def analyze_articles(articles: pd.DataFrame, adapters: ModelAdapters | None = No
                 raise ValueError("Embedding model returned an invalid matrix shape.")
             if not np.isfinite(raw_vectors).all():
                 raise ValueError("Embedding model returned non-finite values.")
-            full_vectors = np.zeros((len(texts), raw_vectors.shape[1]), dtype=np.float32)
-            full_vectors[valid_indices] = raw_vectors
-            similarity = pairwise_cosine_similarity(full_vectors)
+            embeddings = np.zeros((len(texts), raw_vectors.shape[1]), dtype=np.float32)
+            embeddings[valid_indices] = raw_vectors
+            similarity = pairwise_cosine_similarity(embeddings)
             statuses["embeddings"] = "Available"
             statuses["similarity"] = "Available"
             near_pairs = near_duplicate_pairs(similarity, NEAR_DUPLICATE_THRESHOLD, exact_groups)
@@ -146,6 +149,8 @@ def analyze_articles(articles: pd.DataFrame, adapters: ModelAdapters | None = No
         exact_duplicate_groups=exact_groups,
         near_duplicate_pairs=near_pairs,
         similarity=similarity,
+        embeddings=embeddings,
+        valid_indices=valid_indices,
         feature_errors=errors,
         feature_status=statuses,
     )
@@ -165,7 +170,11 @@ def _cached_analysis(cache_key: str, run_id: int, records: list[dict[str, object
 
 
 def analyze_articles_cached(articles: pd.DataFrame, run_id: int = 0) -> AnalysisResult:
-    columns = [column for column in ("id", "text", "text_clean") if column in articles]
+    columns = [
+        column
+        for column in ("id", "title", "text", "text_clean", "source", "published_at", "url")
+        if column in articles
+    ]
     frame = articles[columns].copy()
     key_columns = [column for column in ("id", "text_clean") if column in frame]
     records = frame.where(pd.notna(frame), None).to_dict(orient="records")

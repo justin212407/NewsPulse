@@ -7,9 +7,10 @@ def test_load_sample_data_produces_articles_and_report() -> None:
     content = (Path(__file__).parents[1] / "data" / "sample_articles.csv").read_bytes()
     dataset = load_dataset(content, "sample_articles.csv")
     assert dataset.error is None
-    assert len(dataset.articles) == 12
-    assert dataset.report.accepted_rows == 12
+    assert len(dataset.articles) == 38
+    assert dataset.report.accepted_rows == 38
     assert dataset.articles["published_at"].notna().all()
+    assert dataset.articles["text_clean"].str.contains("synthetic sample", case=False).all()
 
 
 def test_empty_upload_returns_empty_dataset() -> None:

@@ -39,6 +39,11 @@ def encode_texts(texts: list[str]) -> Any:
     return model.encode(texts, convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False)
 
 
+@st.cache_data(show_spinner=False)
+def encode_query(query: str) -> Any:
+    return encode_texts([query])
+
+
 def classify_sentiment(texts: list[str]) -> list[dict[str, object]]:
     try:
         classifier = load_transformer_pipeline("text-classification", SENTIMENT_MODEL)

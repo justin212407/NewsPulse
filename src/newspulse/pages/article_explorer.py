@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 from newspulse.dataset_service import Dataset
-from newspulse.ui.components import render_article_detail, render_validation_summary, searchable_articles
+from newspulse.ui.components import render_article_detail, render_dataset_state, searchable_articles
 from newspulse.ui.layout import render_page_header
 from newspulse.ui.nlp_analysis import article_analysis_for_id, render_analysis_controls, render_article_analysis
 
@@ -13,11 +13,9 @@ def render_article_explorer(dataset: Dataset) -> None:
         "Search and inspect the source records in your collection. Original text is preserved alongside its cleaned display form.",
         "Article library",
     )
-    render_validation_summary(dataset)
-    articles = dataset.articles
-    if articles.empty:
-        st.info("Articles will appear here once a valid dataset is loaded.")
+    if not render_dataset_state(dataset):
         return
+    articles = dataset.articles
 
     search_col, source_col = st.columns([1.5, 1])
     with search_col:
