@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
 from newspulse.config import PAGE_ICON, PAGE_LAYOUT, PAGE_TITLES, SAMPLE_DATA_PATH
 from newspulse.dataset_service import load_dataset
 from newspulse.ui.layout import render_sidebar
@@ -24,10 +29,10 @@ def main() -> None:
 
     pages = [
         st.Page(lambda: render_overview(dataset), title=PAGE_TITLES[0], url_path="overview", default=True),
-        st.Page(lambda: render_story_explorer(), title=PAGE_TITLES[1], url_path="stories"),
-        st.Page(lambda: render_entity_explorer(), title=PAGE_TITLES[2], url_path="entities"),
-        st.Page(lambda: render_narrative_explorer(), title=PAGE_TITLES[3], url_path="narratives"),
-        st.Page(lambda: render_semantic_search(), title=PAGE_TITLES[4], url_path="search"),
+        st.Page(lambda: render_story_explorer(dataset), title=PAGE_TITLES[1], url_path="stories"),
+        st.Page(lambda: render_entity_explorer(dataset), title=PAGE_TITLES[2], url_path="entities"),
+        st.Page(lambda: render_narrative_explorer(dataset), title=PAGE_TITLES[3], url_path="narratives"),
+        st.Page(lambda: render_semantic_search(dataset), title=PAGE_TITLES[4], url_path="search"),
         st.Page(lambda: render_article_explorer(dataset), title=PAGE_TITLES[5], url_path="articles"),
     ]
     navigation = st.navigation(pages, position="sidebar")
