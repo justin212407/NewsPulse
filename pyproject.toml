@@ -19,6 +19,8 @@ dev = ["pytest==9.1.1"]
 nlp = [
   "sentence-transformers==5.1.1",
   "transformers==4.57.1",
+  "scikit-learn==1.7.2",
+  "umap-learn==0.5.9.post2",
 ]
 
 [tool.setuptools.packages.find]
